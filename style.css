@@ -1,13 +1,17 @@
 /* CSS Variables */
 :root {
-  --color-bg: #0d0f12; /* Deep charcoal */
-  --color-bg-alt: #16191d; /* Slightly lighter charcoal */
-  --color-accent: #00F0FF; /* Electric Blue */
+  --color-bg: #0d0f12;
+  /* Deep charcoal */
+  --color-bg-alt: #16191d;
+  /* Slightly lighter charcoal */
+  --color-accent: #00F0FF;
+  /* Electric Blue */
   --color-accent-hover: #00D0DD;
-  --color-text: #FFFFFF; /* Crisp white */
-  --color-text-muted: #A1A9B3; 
+  --color-text: #FFFFFF;
+  /* Crisp white */
+  --color-text-muted: #A1A9B3;
   --color-border: #2A2E35;
-  
+
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
@@ -15,7 +19,9 @@
 }
 
 /* Resets */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -47,7 +53,10 @@ ul {
 }
 
 /* Typography */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -143,8 +152,15 @@ h1, h2, h3, h4 {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 /* Buttons */
@@ -230,7 +246,7 @@ h1, h2, h3, h4 {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -260,6 +276,7 @@ h1, h2, h3, h4 {
   .hero-title {
     font-size: 5rem;
   }
+
   .hero-subtitle {
     font-size: 1.5rem;
   }
@@ -454,4 +471,382 @@ h1, h2, h3, h4 {
     flex-direction: row;
     justify-content: space-between;
   }
+}
+
+/* --- NEW SECTIONS --- */
+
+/* Grid 2 */
+.grid-2 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Pricing / Investment */
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card .duration {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 4px;
+}
+
+.pricing-card .price {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  color: var(--color-accent);
+  margin: 16px 0;
+  font-weight: 800;
+}
+
+.pricing-card .target,
+.pricing-card .includes,
+.pricing-card .payment-terms {
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.pricing-card strong {
+  color: var(--color-text);
+}
+
+.pricing-card ul {
+  list-style: none;
+  margin-top: 8px;
+  padding-left: 0;
+}
+
+.pricing-card ul li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 6px;
+}
+
+.pricing-card ul li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.pricing-card.glow-border {
+  border: 1px solid var(--color-accent);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+  background-color: rgba(0, 240, 255, 0.02);
+}
+
+.pricing-card.glow-border:hover {
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 25px rgba(0, 240, 255, 0.1);
+}
+
+.premium-badge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+/* Policies & Warning Block */
+.warning-block {
+  border-left: 4px solid #FF3366;
+  background-color: rgba(255, 51, 102, 0.05);
+  padding: 32px;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.warning-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid rgba(255, 51, 102, 0.2);
+  border-left: none;
+  pointer-events: none;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #FF3366;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.warning-header h3 {
+  color: #FF3366;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 1.25rem;
+}
+
+.strict-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.example-feedback {
+  background-color: #000;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  margin-bottom: 24px;
+}
+
+.example-feedback .mono-label {
+  color: var(--color-text-muted);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.example-feedback .mono-text {
+  color: #FF3366;
+}
+
+.public-accountability {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.public-accountability strong {
+  color: var(--color-text);
+}
+
+.policy-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .policy-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.policy-card {
+  background-color: var(--color-bg-alt);
+  border: 1px dashed var(--color-border);
+  padding: 24px;
+}
+
+.policy-title {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  margin-bottom: 16px;
+  color: var(--color-accent);
+}
+
+.policy-list,
+.policy-text {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.policy-list {
+  padding-left: 20px;
+}
+
+.policy-list li {
+  margin-bottom: 8px;
+}
+
+.policy-list li strong,
+.policy-text strong {
+  color: var(--color-text);
+}
+
+/* Lifecycle Timeline */
+.vertical-timeline {
+  position: relative;
+  padding-left: 24px;
+}
+
+.vertical-timeline::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 5px;
+  width: 2px;
+  background-color: var(--color-border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -24px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  z-index: 2;
+}
+
+.timeline-content {
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+  transition: all var(--transition-fast);
+}
+
+.timeline-content:hover {
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.phase-title {
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+  color: var(--color-text);
+}
+
+.phase-dates {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  font-weight: 400;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.phase-details {
+  list-style: none;
+  padding: 0;
+}
+
+.phase-details li {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+  padding-left: 16px;
+  position: relative;
+}
+
+.phase-details li::before {
+  content: '-';
+  position: absolute;
+  left: 0;
+  color: var(--color-border);
+}
+
+.phase-details li strong {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  margin-right: 4px;
+}
+
+.hard-lock strong {
+  color: #FF3366;
+}
+
+.milestone strong {
+  color: var(--color-accent);
+}
+
+/* FAQ Accordion */
+.faq .section-heading {
+  margin-bottom: 32px;
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.accordion-item {
+  background-color: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast);
+}
+
+.accordion-item:hover,
+.accordion-item.active {
+  border-color: var(--color-accent);
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.accordion-icon {
+  font-size: 1.5rem;
+  color: var(--color-accent);
+  transition: transform var(--transition-fast);
+  line-height: 1;
+}
+
+.accordion-item.active .accordion-icon {
+  transform: rotate(45deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.accordion-inner {
+  padding: 0 24px 24px 24px;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
 }
