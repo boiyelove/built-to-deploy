@@ -73,7 +73,7 @@ const Gatekeeper = ({ onComplete }) => {
                                     <div className="profiler-form">
                                         <div className="profiler-group">
                                             <label htmlFor={`role-${step.id}`}>Role Selector</label>
-                                            <div className="role-toggles" role="radiogroup" aria-labelledby={`role-${step.id}`}>
+                                            <div className="role-toggles" role="radiogroup" aria-labelledby={`role-${step.id}`} aria-invalid={!!step.errors?.role}>
                                                 {['Frontend', 'Backend', 'DevOps', 'SysOps'].map(role => (
                                                     <button
                                                         key={role}
@@ -87,6 +87,7 @@ const Gatekeeper = ({ onComplete }) => {
                                                     </button>
                                                 ))}
                                             </div>
+                                            {step.errors?.role && <span className="error-message">{step.errors.role}</span>}
                                         </div>
 
                                         <div className="profiler-group">
