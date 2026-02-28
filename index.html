@@ -25,6 +25,41 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script>
+        // Analytics initialization
+        (function() {
+            const GA_ID = 'G-XXXXXXXXXX'; // Replace with actual GA ID
+            const PLAUSIBLE_DOMAIN = 'builttodeploy.com'; // Replace with actual domain
+            const CF_BEACON_TOKEN = ''; // Replace with actual Cloudflare token
+            
+            if (GA_ID && GA_ID !== 'G-XXXXXXXXXX') {
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+                document.head.appendChild(script);
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = function() { window.dataLayer.push(arguments); };
+                window.gtag('js', new Date());
+                window.gtag('config', GA_ID);
+            }
+            
+            if (PLAUSIBLE_DOMAIN) {
+                const script = document.createElement('script');
+                script.defer = true;
+                script.dataset.domain = PLAUSIBLE_DOMAIN;
+                script.src = 'https://plausible.io/js/script.js';
+                document.head.appendChild(script);
+            }
+            
+            if (CF_BEACON_TOKEN) {
+                const script = document.createElement('script');
+                script.defer = true;
+                script.dataset.cfBeacon = JSON.stringify({ token: CF_BEACON_TOKEN });
+                script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+                document.body.appendChild(script);
+            }
+        })();
+    </script>
 </head>
 
 <body>
