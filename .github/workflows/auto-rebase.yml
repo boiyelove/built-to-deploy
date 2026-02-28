@@ -1,0 +1,96 @@
+name: Auto Rebase PRs
+
+on:
+  push:
+    branches: [dev]
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  merge-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Serial merge queue + rebase remaining
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Get open PRs sorted by number (oldest first)
+          prs=$(gh pr list --base dev --state open --json number,headRefName --jq 'sort_by(.number) | .[] | "\(.number) \(.headRefName)"')
+
+          if [ -z "$prs" ]; then
+            echo "No open PRs targeting dev"
+            exit 0
+          fi
+
+          MERGED_ONE=false
+
+          echo "$prs" | while read -r pr_number branch; do
+            echo "--- PR #${pr_number} (${branch}) ---"
+
+            # Check CI status
+            ci_status=$(gh pr checks "$pr_number" --json bucket --jq '[.[] | select(.bucket != "pass")] | length' 2>/dev/null || echo "unknown")
+
+            if [ "$ci_status" = "0" ] && [ "$MERGED_ONE" = "false" ]; then
+              # CI passed and we haven't merged yet this run -- merge this one
+              echo "CI passed -- squash merging (queue position: first)"
+              if gh pr merge "$pr_number" --squash; then
+                echo "Merged #${pr_number}"
+                MERGED_ONE=true
+                # Refresh dev after merge
+                git fetch origin dev
+                git checkout dev
+                git reset --hard origin/dev
+                continue
+              else
+                echo "Merge failed, will try rebase"
+              fi
+            elif [ "$ci_status" = "0" ]; then
+              echo "CI passed but already merged one this run -- rebase and wait for next trigger"
+            fi
+
+            # Rebase onto latest dev
+            git fetch origin "$branch" 2>/dev/null
+            git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
+            if ! git rev-parse --verify "$branch" >/dev/null 2>&1; then
+              echo "Could not checkout $branch, skipping"
+              git checkout dev 2>/dev/null
+              continue
+            fi
+
+            if git rebase origin/dev 2>/dev/null; then
+              git push --force-with-lease origin "$branch"
+              echo "Rebased successfully"
+            else
+              git rebase --abort
+              gh pr close "$pr_number" --comment "Auto-closed: rebase conflict with dev. Issue will be re-queued for a fresh attempt."
+              echo "Conflict -- PR closed"
+            fi
+
+            git checkout dev 2>/dev/null
+          done
+
+      - name: Delete orphaned kiro branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --prune origin
+
+          for branch in $(git branch -r | grep 'origin/kiro/' | sed 's|origin/||'); do
+            pr_state=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number' 2>/dev/null)
+            if [ -z "$pr_state" ]; then
+              git push origin --delete "$branch" 2>/dev/null && echo "Deleted $branch" || echo "Failed to delete $branch"
+            fi
+          done
