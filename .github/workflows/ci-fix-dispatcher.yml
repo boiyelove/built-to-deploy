@@ -1,3 +1,9 @@
+# ---
+# Description: Watches for CI failures on kiro/ branches, triages error type, creates fix issue
+# Author: boiyelove
+# Pass Criteria: N/A (operational workflow)
+# ---
+
 name: CI Fix Dispatcher
 
 on:

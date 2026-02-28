@@ -1,3 +1,9 @@
+# ---
+# Description: Serial merge queue that merges all passing PRs, rebases remaining, closes conflicts
+# Author: boiyelove
+# Pass Criteria: N/A (operational workflow)
+# ---
+
 name: Auto Rebase PRs
 
 on:
