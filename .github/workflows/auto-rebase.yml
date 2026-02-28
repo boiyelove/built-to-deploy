@@ -3,8 +3,9 @@ name: Auto Rebase PRs
 on:
   push:
     branches: [dev]
+  workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '*/15 * * * *'
 
 permissions:
   contents: write
