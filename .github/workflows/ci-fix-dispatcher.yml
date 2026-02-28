@@ -1,0 +1,107 @@
+name: CI Fix Dispatcher
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  dispatch-fix:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && startsWith(github.event.workflow_run.head_branch, 'kiro/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get failure logs and create fix issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          REPO="${{ github.repository }}"
+          ISSUE_NUM=$(echo "$BRANCH" | grep -oE '[0-9]+$')
+
+          echo "CI failed on $BRANCH (run $RUN_ID)"
+
+          # Skip if this is already a fix attempt
+          EXISTING=$(gh issue list --repo "$REPO" --search "CI fix: $BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null)
+          if [ -n "$EXISTING" ]; then
+            echo "Fix issue #$EXISTING already exists, skipping"
+            exit 0
+          fi
+
+          # Get failed job logs
+          LOGS=$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>/dev/null | tail -50)
+
+          # Triage: identify error type
+          if echo "$LOGS" | grep -q "no-explicit-any\|@typescript-eslint"; then
+            CATEGORY="lint"
+            FIX_HINT="Replace \`any\` types with proper TypeScript types. Use \`unknown\` with type guards if the type is truly unknown."
+          elif echo "$LOGS" | grep -q "Failed to resolve import\|Cannot find module"; then
+            CATEGORY="missing-dependency"
+            FIX_HINT="A module import failed. Check if the dependency is in package.json. Run \`npm install <package>\` if missing, or fix the import path."
+          elif echo "$LOGS" | grep -q "coverage threshold"; then
+            CATEGORY="coverage"
+            FIX_HINT="Test coverage dropped below thresholds. Add tests for the new code, or check if existing tests were broken."
+          elif echo "$LOGS" | grep -q "Type error\|TS[0-9]\|type-check"; then
+            CATEGORY="type-check"
+            FIX_HINT="TypeScript compilation errors. Fix the type errors shown in the logs. Do not use \`any\` -- use proper types."
+          elif echo "$LOGS" | grep -q "FAIL\|test.*failed\|AssertionError"; then
+            CATEGORY="test"
+            FIX_HINT="Tests are failing. Read the test output to understand what broke. Fix the implementation to match test expectations, or update tests if the behavior change is intentional."
+          elif echo "$LOGS" | grep -q "Build error\|build.*failed\|vite.*error"; then
+            CATEGORY="build"
+            FIX_HINT="Build is failing. Check for syntax errors, missing exports, or circular dependencies."
+          else
+            CATEGORY="unknown"
+            FIX_HINT="Review the CI logs below and fix the root cause."
+          fi
+
+          # Truncate logs for issue body
+          LOGS_TRUNCATED=$(echo "$LOGS" | tail -30)
+
+          # Create fix issue
+          gh issue create --repo "$REPO" \
+            --title "CI fix: $BRANCH ($CATEGORY)" \
+            --label "kiro,queued" \
+            --body "## Task Description
+Fix the CI failure on branch \`$BRANCH\` (original issue #$ISSUE_NUM).
+
+## Error Category
+**$CATEGORY**
+
+## Fix Instructions
+$FIX_HINT
+
+## CI Failure Logs
+\`\`\`
+$LOGS_TRUNCATED
+\`\`\`
+
+## Requirements
+- [ ] Fix the error shown in the logs above
+- [ ] Ensure all CI checks pass: lint, type-check, test, build
+- [ ] Do NOT change test thresholds or disable lint rules
+
+## Acceptance Criteria
+- [ ] CI passes on the branch
+- [ ] No new lint warnings introduced
+
+## Files to Modify/Create
+- Check branch \`$BRANCH\` for the files that need fixing
+
+## Technical Constraints
+- Work on branch \`$BRANCH\` (checkout existing branch, do not create new)
+- Only fix the CI errors, do not add new features
+- Follow .kiro/steering/ standards
+
+## Context
+CI run: https://github.com/$REPO/actions/runs/$RUN_ID
+Original issue: #$ISSUE_NUM
+---
+**Note**: Worker will execute with \`--trust-all-tools\`."
+
+          echo "Fix issue created for $BRANCH ($CATEGORY)"
