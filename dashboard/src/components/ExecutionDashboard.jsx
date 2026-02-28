@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ReactFlow, Background, Controls } from '@xyflow/react';
+import { useState, useEffect } from 'react';
+import { ReactFlow, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Lock, X, Bell } from 'lucide-react';
 

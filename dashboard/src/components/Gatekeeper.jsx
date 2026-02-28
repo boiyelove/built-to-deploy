@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Check, UploadCloud } from 'lucide-react';
 
 const mockValidate = (callback) => {
@@ -26,14 +26,6 @@ const Gatekeeper = ({ onComplete }) => {
 
     const handleInputChange = (id, value) => {
         setSteps(prev => prev.map(s => s.id === id ? { ...s, value } : s));
-    };
-
-    const _handleInputSubmit = (id) => {
-        const step = steps.find(s => s.id === id);
-        if (step.value.trim().length > 0) {
-            updateStatus(id, 'loading');
-            mockValidate(() => updateStatus(id, 'success'));
-        }
     };
 
     return (
