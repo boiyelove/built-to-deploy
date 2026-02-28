@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Link as LinkIcon, X } from 'lucide-react';
 
@@ -27,39 +27,58 @@ const AdminTriageDashboard = () => {
         setSelectedBlockedTask(null);
     };
 
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && selectedBlockedTask) {
+                setSelectedBlockedTask(null);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [selectedBlockedTask]);
+
     return (
         <div className="admin-triage-container">
             <header className="admin-header">
                 <div>
                     <h1 className="admin-title">ADMIN TRIAGE_</h1>
-                    <div className="admin-subtitle">Master View / Deployment Pipeline</div>
+                    <p className="admin-subtitle">Master View / Deployment Pipeline</p>
                 </div>
-                <div>
+                <nav aria-label="Admin navigation">
                     <Link to="/" className="btn btn-outline" style={{ display: 'inline-block' }}>Return to Candidate View</Link>
-                </div>
+                </nav>
             </header>
 
-            <div className="kanban-board">
+            <main className="kanban-board" role="main" aria-label="Task management board">
                 {columns.map(col => (
-                    <div key={col} className={`kanban-column ${col.toLowerCase().replace(' ', '-')}`}>
+                    <section key={col} className={`kanban-column ${col.toLowerCase().replace(' ', '-')}`} aria-labelledby={`column-${col.replace(' ', '-')}`}>
                         <div className="kanban-column-header">
-                            <h3>{col}</h3>
-                            <span className="task-count">
+                            <h2 id={`column-${col.replace(' ', '-')}`}>{col}</h2>
+                            <span className="task-count" aria-label={`${tasks.filter(t => t.status === col).length} tasks`}>
                                 {tasks.filter(t => t.status === col).length}
                             </span>
                         </div>
 
                         <div className="kanban-cards">
                             {tasks.filter(t => t.status === col).map(task => (
-                                <div
+                                <article
                                     key={task.id}
                                     className={`kanban-card ${task.status === 'Blocked' ? 'is-blocked' : ''}`}
                                     onClick={() => task.status === 'Blocked' && setSelectedBlockedTask(task)}
+                                    onKeyDown={(e) => {
+                                        if (task.status === 'Blocked' && (e.key === 'Enter' || e.key === ' ')) {
+                                            e.preventDefault();
+                                            setSelectedBlockedTask(task);
+                                        }
+                                    }}
+                                    tabIndex={task.status === 'Blocked' ? 0 : undefined}
+                                    role={task.status === 'Blocked' ? 'button' : undefined}
+                                    aria-label={task.status === 'Blocked' ? `${task.title}, blocked by ${task.blockedBy}, click to reassign` : undefined}
                                 >
                                     <div className="card-top">
                                         <div className="task-name">{task.title}</div>
                                         {task.status === 'Blocked' && (
-                                            <AlertCircle className="blocked-icon" size={20} />
+                                            <AlertCircle className="blocked-icon" size={20} aria-hidden="true" />
                                         )}
                                     </div>
                                     <div className="card-meta">
@@ -68,34 +87,34 @@ const AdminTriageDashboard = () => {
                                     </div>
                                     {task.blockedBy && (
                                         <div className="dependency-link">
-                                            <LinkIcon size={14} /> DEP: {task.blockedBy}
+                                            <LinkIcon size={14} aria-hidden="true" /> DEP: {task.blockedBy}
                                         </div>
                                     )}
-                                </div>
+                                </article>
                             ))}
                         </div>
-                    </div>
+                    </section>
                 ))}
-            </div>
+            </main>
 
             {selectedBlockedTask && (
-                <div className="modal-overlay" onClick={() => setSelectedBlockedTask(null)}>
+                <div className="modal-overlay" onClick={() => setSelectedBlockedTask(null)} role="dialog" aria-modal="true" aria-labelledby="reassign-title">
                     <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
                         <div className="modal-header">
-                            <h2 className="modal-title">Sys Query: Reassign Task</h2>
-                            <button className="modal-close" onClick={() => setSelectedBlockedTask(null)}>
-                                <X size={24} />
+                            <h2 id="reassign-title" className="modal-title">Sys Query: Reassign Task</h2>
+                            <button className="modal-close" onClick={() => setSelectedBlockedTask(null)} aria-label="Close reassignment dialog">
+                                <X size={24} aria-hidden="true" />
                             </button>
                         </div>
                         <div className="modal-body" style={{ flexDirection: 'column', padding: '24px' }}>
-                            <div className="query-box">
-                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }}>&gt;</span> SELECT replacement FROM cohort</div>
-                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }}>&gt;</span> WHERE role = '{selectedBlockedTask.role}'</div>
-                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }}>&gt;</span> AND capacity = 'Available'</div>
-                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }}>&gt;</span> ORDER BY stack_match DESC LIMIT 1;</div>
+                            <div className="query-box" role="region" aria-label="System query">
+                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }} aria-hidden="true">&gt;</span> SELECT replacement FROM cohort</div>
+                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }} aria-hidden="true">&gt;</span> WHERE role = '{selectedBlockedTask.role}'</div>
+                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }} aria-hidden="true">&gt;</span> AND capacity = 'Available'</div>
+                                <div className="query-line"><span style={{ color: 'var(--color-accent)' }} aria-hidden="true">&gt;</span> ORDER BY stack_match DESC LIMIT 1;</div>
                             </div>
 
-                            <div className="query-result">
+                            <div className="query-result" role="region" aria-live="polite" aria-label="Suggested replacement">
                                 <div className="match-label">Suggested Replacement Found:</div>
                                 <div className="match-card">
                                     <div className="match-name">Elena R.</div>
@@ -107,7 +126,7 @@ const AdminTriageDashboard = () => {
                             <button className="btn btn-outline" onClick={() => setSelectedBlockedTask(null)}>
                                 Cancel
                             </button>
-                            <button className="btn btn-primary" onClick={() => handleReassign(selectedBlockedTask.id)}>
+                            <button className="btn btn-primary" onClick={() => handleReassign(selectedBlockedTask.id)} aria-label="Reassign task to Elena R.">
                                 Execute Reassignment
                             </button>
                         </div>
