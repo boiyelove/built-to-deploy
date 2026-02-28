@@ -29,8 +29,35 @@ To deploy updates:
 npm run deploy
 ```
 
+## Database Setup
+
+The project uses Cloudflare D1 for waitlist storage.
+
+### Initial Setup
+
+1. Create the D1 database:
+```bash
+npx wrangler d1 create built-to-deploy-db
+```
+
+2. Update `wrangler.toml` with the database ID from the output
+
+3. Initialize the database schema:
+```bash
+npx wrangler d1 execute built-to-deploy-db --file=./schema.sql
+```
+
+### Local Development
+
+For local testing with D1:
+```bash
+npx wrangler pages dev . --d1=DB=built-to-deploy-db
+```
+
 ## Project Files
 - wrangler.toml: Cloudflare Pages configuration
 - package.json: Contains deploy script
+- schema.sql: D1 database schema
+- functions/api/waitlist.js: Waitlist API endpoint
 - index.html: Main HTML file
 - style.css: Stylesheet
