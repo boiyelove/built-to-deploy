@@ -5,7 +5,7 @@ on:
     branches: [dev]
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '0 */2 * * *'
 
 permissions:
   contents: write
@@ -21,67 +21,77 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Serial merge queue + rebase remaining
+      - name: Merge all passing PRs sequentially
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Get open PRs sorted by number (oldest first)
-          prs=$(gh pr list --base dev --state open --json number,headRefName --jq 'sort_by(.number) | .[] | "\(.number) \(.headRefName)"')
+          MERGED=0
+          REBASED=0
+          CLOSED=0
 
-          if [ -z "$prs" ]; then
-            echo "No open PRs targeting dev"
-            exit 0
-          fi
+          # Loop: merge one, rebase rest, repeat until no more mergeable
+          while true; do
+            # Get open PRs sorted by number (oldest first)
+            prs=$(gh pr list --base dev --state open --json number,headRefName --jq 'sort_by(.number) | .[] | "\(.number) \(.headRefName)"')
 
-          MERGED_ONE=false
+            [ -z "$prs" ] && echo "No open PRs" && break
 
-          echo "$prs" | while read -r pr_number branch; do
-            echo "--- PR #${pr_number} (${branch}) ---"
+            MERGED_THIS_ROUND=false
 
-            # Check CI status
-            ci_status=$(gh pr checks "$pr_number" --json bucket --jq '[.[] | select(.bucket != "pass")] | length' 2>/dev/null || echo "unknown")
+            while read -r pr_number branch; do
+              echo "--- PR #${pr_number} (${branch}) ---"
 
-            if [ "$ci_status" = "0" ] && [ "$MERGED_ONE" = "false" ]; then
-              # CI passed and we haven't merged yet this run -- merge this one
-              echo "CI passed -- squash merging (queue position: first)"
-              if gh pr merge "$pr_number" --squash; then
-                echo "Merged #${pr_number}"
-                MERGED_ONE=true
-                # Refresh dev after merge
-                git fetch origin dev
-                git checkout dev
-                git reset --hard origin/dev
-                continue
-              else
-                echo "Merge failed, will try rebase"
+              ci_status=$(gh pr checks "$pr_number" --json bucket --jq '[.[] | select(.bucket != "pass")] | length' 2>/dev/null || echo "unknown")
+
+              if [ "$ci_status" = "0" ]; then
+                echo "CI passed -- squash merging"
+                if gh pr merge "$pr_number" --squash; then
+                  echo "Merged #${pr_number}"
+                  MERGED=$((MERGED + 1))
+                  MERGED_THIS_ROUND=true
+                  sleep 2
+                  break  # Break inner loop, refresh PR list, continue outer loop
+                fi
               fi
-            elif [ "$ci_status" = "0" ]; then
-              echo "CI passed but already merged one this run -- rebase and wait for next trigger"
-            fi
 
-            # Rebase onto latest dev
-            git fetch origin "$branch" 2>/dev/null
-            git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
-            if ! git rev-parse --verify "$branch" >/dev/null 2>&1; then
-              echo "Could not checkout $branch, skipping"
+              # Not mergeable yet -- try rebase
+              git fetch origin "$branch" 2>/dev/null
+              git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
+              if ! git rev-parse --verify "$branch" >/dev/null 2>&1; then
+                echo "Could not checkout $branch, skipping"
+                git checkout dev 2>/dev/null
+                continue
+              fi
+
+              git fetch origin dev
+              if git rebase origin/dev 2>/dev/null; then
+                git push --force-with-lease origin "$branch" 2>/dev/null
+                echo "Rebased successfully"
+                REBASED=$((REBASED + 1))
+              else
+                git rebase --abort
+                gh pr close "$pr_number" --comment "Auto-closed: rebase conflict with dev. Issue will be re-queued for a fresh attempt."
+                echo "Conflict -- PR closed"
+                CLOSED=$((CLOSED + 1))
+              fi
+
               git checkout dev 2>/dev/null
-              continue
-            fi
+            done <<< "$prs"
 
-            if git rebase origin/dev 2>/dev/null; then
-              git push --force-with-lease origin "$branch"
-              echo "Rebased successfully"
-            else
-              git rebase --abort
-              gh pr close "$pr_number" --comment "Auto-closed: rebase conflict with dev. Issue will be re-queued for a fresh attempt."
-              echo "Conflict -- PR closed"
-            fi
+            # If nothing merged this round, stop
+            [ "$MERGED_THIS_ROUND" = "false" ] && break
 
-            git checkout dev 2>/dev/null
+            # Refresh dev after merge
+            git fetch origin dev
+            git checkout dev
+            git reset --hard origin/dev
           done
+
+          echo ""
+          echo "=== Summary: merged=$MERGED rebased=$REBASED closed=$CLOSED ==="
 
       - name: Delete orphaned kiro branches
         env:
