@@ -71,10 +71,7 @@ jobs:
           LOGS_TRUNCATED=$(echo "$LOGS" | tail -30)
 
           # Create fix issue
-          gh issue create --repo "$REPO" \
-            --title "CI fix: $BRANCH ($CATEGORY)" \
-            --label "kiro,queued" \
-            --body "## Task Description
+          ISSUE_BODY="## Task Description
 Fix the CI failure on branch \`$BRANCH\` (original issue #$ISSUE_NUM).
 
 ## Error Category
@@ -110,5 +107,10 @@ CI run: https://github.com/$REPO/actions/runs/$RUN_ID
 Original issue: #$ISSUE_NUM
 ---
 **Note**: Worker will execute with \`--trust-all-tools\`."
+
+          gh issue create --repo "$REPO" \
+            --title "CI fix: $BRANCH ($CATEGORY)" \
+            --label "kiro,queued" \
+            --body "$ISSUE_BODY"
 
           echo "Fix issue created for $BRANCH ($CATEGORY)"
