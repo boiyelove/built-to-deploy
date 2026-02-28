@@ -74,41 +74,6 @@ jobs:
           gh issue create --repo "$REPO" \
             --title "CI fix: $BRANCH ($CATEGORY)" \
             --label "kiro,queued" \
-            --body "## Task Description
-Fix the CI failure on branch \`$BRANCH\` (original issue #$ISSUE_NUM).
-
-## Error Category
-**$CATEGORY**
-
-## Fix Instructions
-$FIX_HINT
-
-## CI Failure Logs
-\`\`\`
-$LOGS_TRUNCATED
-\`\`\`
-
-## Requirements
-- [ ] Fix the error shown in the logs above
-- [ ] Ensure all CI checks pass: lint, type-check, test, build
-- [ ] Do NOT change test thresholds or disable lint rules
-
-## Acceptance Criteria
-- [ ] CI passes on the branch
-- [ ] No new lint warnings introduced
-
-## Files to Modify/Create
-- Check branch \`$BRANCH\` for the files that need fixing
-
-## Technical Constraints
-- Work on branch \`$BRANCH\` (checkout existing branch, do not create new)
-- Only fix the CI errors, do not add new features
-- Follow .kiro/steering/ standards
-
-## Context
-CI run: https://github.com/$REPO/actions/runs/$RUN_ID
-Original issue: #$ISSUE_NUM
----
-**Note**: Worker will execute with \`--trust-all-tools\`."
+            --body "## Task Description\nFix the CI failure on branch \`$BRANCH\` (original issue #$ISSUE_NUM).\n\n## Error Category\n**$CATEGORY**\n\n## Fix Instructions\n$FIX_HINT\n\n## CI Failure Logs\n\`\`\`\n$LOGS_TRUNCATED\n\`\`\`\n\n## Requirements\n- [ ] Fix the error shown in the logs above\n- [ ] Ensure all CI checks pass: lint, type-check, test, build\n- [ ] Do NOT change test thresholds or disable lint rules\n\n## Acceptance Criteria\n- [ ] CI passes on the branch\n- [ ] No new lint warnings introduced\n\n## Files to Modify/Create\n- Check branch \`$BRANCH\` for the files that need fixing\n\n## Technical Constraints\n- Work on branch \`$BRANCH\` (checkout existing branch, do not create new)\n- Only fix the CI errors, do not add new features\n- Follow .kiro/steering/ standards\n\n## Context\nCI run: https://github.com/$REPO/actions/runs/$RUN_ID\nOriginal issue: #$ISSUE_NUM\n---\n**Note**: Worker will execute with \`--trust-all-tools\`."
 
           echo "Fix issue created for $BRANCH ($CATEGORY)"
