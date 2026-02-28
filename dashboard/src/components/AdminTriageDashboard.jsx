@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { AlertCircle, Link as LinkIcon, X } from 'lucide-react';
 
 const mockTasks = [
@@ -43,9 +42,6 @@ const AdminTriageDashboard = () => {
                 <div>
                     <h1 className="admin-title">ADMIN TRIAGE_</h1>
                     <div className="admin-subtitle">Master View / Deployment Pipeline</div>
-                </div>
-                <div>
-                    <Link to="/" className="btn btn-outline" style={{ display: 'inline-block' }} aria-label="Return to candidate view">Return to Candidate View</Link>
                 </div>
             </header>
 

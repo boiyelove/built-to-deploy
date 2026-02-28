@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navigation from './components/Navigation';
 import Gatekeeper from './components/Gatekeeper';
 import ExecutionDashboard from './components/ExecutionDashboard';
 import AdminTriageDashboard from './components/AdminTriageDashboard';
@@ -10,6 +11,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
+        {isAuthenticated && <Navigation />}
         <Routes>
           <Route path="/" element={
             !isAuthenticated ? (
