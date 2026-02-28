@@ -1,4 +1,10 @@
-// Analytics utility supporting Google Analytics, Plausible, and Cloudflare Web Analytics
+declare global {
+  interface Window {
+    dataLayer: unknown[];
+    gtag: (...args: unknown[]) => void;
+    plausible: (eventName: string, options?: { props?: Record<string, unknown> }) => void;
+  }
+}
 
 const config = {
   ga: import.meta.env.VITE_GA_ID,
@@ -14,7 +20,7 @@ export const initAnalytics = () => {
     document.head.appendChild(script);
     
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function() { window.dataLayer.push(arguments); };
+    window.gtag = function(...args: unknown[]) { window.dataLayer.push(args); };
     window.gtag('js', new Date());
     window.gtag('config', config.ga);
   }
@@ -36,7 +42,7 @@ export const initAnalytics = () => {
   }
 };
 
-export const trackEvent = (eventName, properties = {}) => {
+export const trackEvent = (eventName: string, properties: Record<string, unknown> = {}) => {
   if (window.gtag) {
     window.gtag('event', eventName, properties);
   }

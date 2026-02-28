@@ -1,12 +1,33 @@
 import { useState } from 'react';
 import { Check, UploadCloud } from 'lucide-react';
 
-const mockValidate = (callback) => {
+interface ProfilerValue {
+    role: string;
+    stack: string;
+    design: number;
+    efficiency: number;
+    debugging: number;
+    objective: string;
+}
+
+interface Step {
+    id: number;
+    type: string;
+    label: string;
+    status: string;
+    value?: ProfilerValue;
+}
+
+interface GatekeeperProps {
+    onComplete: () => void;
+}
+
+const mockValidate = (callback: () => void) => {
     setTimeout(() => callback(), 1500);
 };
 
-const Gatekeeper = ({ onComplete }) => {
-    const [steps, setSteps] = useState([
+const Gatekeeper = ({ onComplete }: GatekeeperProps) => {
+    const [steps, setSteps] = useState<Step[]>([
         { id: 1, type: 'oauth', label: 'Authenticate with Google', status: 'pending' },
         { id: 2, type: 'oauth', label: 'Connect LinkedIn Profile', status: 'pending' },
         { id: 3, type: 'upload', label: 'Upload Resume (.pdf only)', status: 'pending' },
@@ -15,16 +36,16 @@ const Gatekeeper = ({ onComplete }) => {
 
     const allComplete = steps.every(s => s.status === 'success');
 
-    const updateStatus = (id, status) => {
+    const updateStatus = (id: number, status: string) => {
         setSteps(prev => prev.map(s => s.id === id ? { ...s, status } : s));
     };
 
-    const handleAction = (id) => {
+    const handleAction = (id: number) => {
         updateStatus(id, 'loading');
         mockValidate(() => updateStatus(id, 'success'));
     };
 
-    const handleInputChange = (id, value) => {
+    const handleInputChange = (id: number, value: ProfilerValue) => {
         setSteps(prev => prev.map(s => s.id === id ? { ...s, value } : s));
     };
 
@@ -61,7 +82,7 @@ const Gatekeeper = ({ onComplete }) => {
                                     </div>
                                 )}
 
-                                {step.type === 'profiler' && (
+                                {step.type === 'profiler' && step.value && (
                                     <div className="profiler-form">
                                         <div className="profiler-group">
                                             <label htmlFor={`role-${step.id}`}>Role Selector</label>
@@ -69,10 +90,10 @@ const Gatekeeper = ({ onComplete }) => {
                                                 {['Frontend', 'Backend', 'DevOps', 'SysOps'].map(role => (
                                                     <button
                                                         key={role}
-                                                        className={`btn-pill ${step.value.role === role ? 'active' : ''}`}
-                                                        onClick={() => handleInputChange(step.id, { ...step.value, role })}
+                                                        className={`btn-pill ${step.value!.role === role ? 'active' : ''}`}
+                                                        onClick={() => handleInputChange(step.id, { ...step.value!, role })}
                                                         role="radio"
-                                                        aria-checked={step.value.role === role}
+                                                        aria-checked={step.value!.role === role}
                                                         aria-label={`Select ${role} role`}
                                                     >
                                                         {role}
@@ -89,7 +110,7 @@ const Gatekeeper = ({ onComplete }) => {
                                                 list="stack-options"
                                                 placeholder="Search stack (e.g. React/Node)..."
                                                 value={step.value.stack}
-                                                onChange={(e) => handleInputChange(step.id, { ...step.value, stack: e.target.value })}
+                                                onChange={(e) => handleInputChange(step.id, { ...step.value!, stack: e.target.value })}
                                                 aria-label="Search and select your technology stack"
                                             />
                                             <datalist id="stack-options">
@@ -108,10 +129,10 @@ const Gatekeeper = ({ onComplete }) => {
                                                 id={`design-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.design}
-                                                onChange={(e) => handleInputChange(step.id, { ...step.value, design: e.target.value })}
+                                                onChange={(e) => handleInputChange(step.id, { ...step.value!, design: Number(e.target.value) })}
                                                 aria-label={`System Design skill level: ${step.value.design} out of 5`}
-                                                aria-valuemin="1"
-                                                aria-valuemax="5"
+                                                aria-valuemin={1}
+                                                aria-valuemax={5}
                                                 aria-valuenow={step.value.design}
                                             />
                                         </div>
@@ -122,10 +143,10 @@ const Gatekeeper = ({ onComplete }) => {
                                                 id={`efficiency-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.efficiency}
-                                                onChange={(e) => handleInputChange(step.id, { ...step.value, efficiency: e.target.value })}
+                                                onChange={(e) => handleInputChange(step.id, { ...step.value!, efficiency: Number(e.target.value) })}
                                                 aria-label={`Algorithmic Efficiency skill level: ${step.value.efficiency} out of 5`}
-                                                aria-valuemin="1"
-                                                aria-valuemax="5"
+                                                aria-valuemin={1}
+                                                aria-valuemax={5}
                                                 aria-valuenow={step.value.efficiency}
                                             />
                                         </div>
@@ -136,10 +157,10 @@ const Gatekeeper = ({ onComplete }) => {
                                                 id={`debugging-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.debugging}
-                                                onChange={(e) => handleInputChange(step.id, { ...step.value, debugging: e.target.value })}
+                                                onChange={(e) => handleInputChange(step.id, { ...step.value!, debugging: Number(e.target.value) })}
                                                 aria-label={`Debugging and Testing skill level: ${step.value.debugging} out of 5`}
-                                                aria-valuemin="1"
-                                                aria-valuemax="5"
+                                                aria-valuemin={1}
+                                                aria-valuemax={5}
                                                 aria-valuenow={step.value.debugging}
                                             />
                                         </div>
@@ -149,7 +170,7 @@ const Gatekeeper = ({ onComplete }) => {
                                             <select
                                                 id={`objective-${step.id}`}
                                                 value={step.value.objective}
-                                                onChange={(e) => handleInputChange(step.id, { ...step.value, objective: e.target.value })}
+                                                onChange={(e) => handleInputChange(step.id, { ...step.value!, objective: e.target.value })}
                                                 aria-label="Select your primary objective"
                                             >
                                                 <option value="" disabled>Select Objective</option>
@@ -162,12 +183,12 @@ const Gatekeeper = ({ onComplete }) => {
                                         <button
                                             className="btn btn-primary"
                                             onClick={() => {
-                                                if (step.value.role && step.value.stack && step.value.objective) {
+                                                if (step.value!.role && step.value!.stack && step.value!.objective) {
                                                     updateStatus(step.id, 'loading');
                                                     mockValidate(() => updateStatus(step.id, 'success'));
                                                 }
                                             }}
-                                            disabled={!(step.value.role && step.value.stack && step.value.objective)}
+                                            disabled={!(step.value!.role && step.value!.stack && step.value!.objective)}
                                             style={{ marginTop: '16px', width: '100%' }}
                                         >
                                             Save Profile Identity
