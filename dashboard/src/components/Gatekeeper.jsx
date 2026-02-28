@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Check, UploadCloud } from 'lucide-react';
 
 const mockValidate = (callback) => {
@@ -28,43 +28,35 @@ const Gatekeeper = ({ onComplete }) => {
         setSteps(prev => prev.map(s => s.id === id ? { ...s, value } : s));
     };
 
-    const _handleInputSubmit = (id) => {
-        const step = steps.find(s => s.id === id);
-        if (step.value.trim().length > 0) {
-            updateStatus(id, 'loading');
-            mockValidate(() => updateStatus(id, 'success'));
-        }
-    };
-
     return (
         <div className="gatekeeper-container">
             <h2 className="terminal-heading">Pre-Flight Checklist</h2>
 
-            <div className="checklist">
+            <div className="checklist" role="list">
                 {steps.map((step, index) => (
-                    <div key={step.id} className="checklist-item">
+                    <div key={step.id} className="checklist-item" role="listitem">
                         <div className="checklist-header">
                             <div className="checklist-title">
-                                <span className="checklist-number">0{index + 1}.</span>
+                                <span className="checklist-number" aria-hidden="true">0{index + 1}.</span>
                                 {step.label}
                             </div>
-                            <div className="checklist-status">
-                                {step.status === 'success' && <Check className="status-check" size={20} />}
-                                {step.status === 'loading' && <div className="spinner"></div>}
+                            <div className="checklist-status" aria-live="polite" aria-atomic="true">
+                                {step.status === 'success' && <Check className="status-check" size={20} aria-label="Completed" />}
+                                {step.status === 'loading' && <div className="spinner" role="status" aria-label="Loading"></div>}
                             </div>
                         </div>
 
                         {step.status === 'pending' && (
                             <div className="checklist-action">
                                 {step.type === 'oauth' && (
-                                    <button className="btn btn-outline" onClick={() => handleAction(step.id)}>
+                                    <button className="btn btn-outline" onClick={() => handleAction(step.id)} aria-label={`Connect ${step.label}`}>
                                         Connect
                                     </button>
                                 )}
 
                                 {step.type === 'upload' && (
-                                    <div className="drop-zone" onClick={() => handleAction(step.id)}>
-                                        <UploadCloud size={24} style={{ marginBottom: '8px', color: 'var(--color-text-muted)' }} />
+                                    <div className="drop-zone" onClick={() => handleAction(step.id)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleAction(step.id)} aria-label="Upload resume PDF file">
+                                        <UploadCloud size={24} style={{ marginBottom: '8px', color: 'var(--color-text-muted)' }} aria-hidden="true" />
                                         <p>Drag & Drop or Click to Browse PDF</p>
                                     </div>
                                 )}
@@ -72,13 +64,16 @@ const Gatekeeper = ({ onComplete }) => {
                                 {step.type === 'profiler' && (
                                     <div className="profiler-form">
                                         <div className="profiler-group">
-                                            <label>Role Selector</label>
-                                            <div className="role-toggles">
+                                            <label htmlFor={`role-${step.id}`}>Role Selector</label>
+                                            <div className="role-toggles" role="radiogroup" aria-labelledby={`role-${step.id}`}>
                                                 {['Frontend', 'Backend', 'DevOps', 'SysOps'].map(role => (
                                                     <button
                                                         key={role}
                                                         className={`btn-pill ${step.value.role === role ? 'active' : ''}`}
                                                         onClick={() => handleInputChange(step.id, { ...step.value, role })}
+                                                        role="radio"
+                                                        aria-checked={step.value.role === role}
+                                                        aria-label={`Select ${role} role`}
                                                     >
                                                         {role}
                                                     </button>
@@ -87,13 +82,15 @@ const Gatekeeper = ({ onComplete }) => {
                                         </div>
 
                                         <div className="profiler-group">
-                                            <label>Stack Selector</label>
+                                            <label htmlFor={`stack-${step.id}`}>Stack Selector</label>
                                             <input
+                                                id={`stack-${step.id}`}
                                                 type="text"
                                                 list="stack-options"
                                                 placeholder="Search stack (e.g. React/Node)..."
                                                 value={step.value.stack}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, stack: e.target.value })}
+                                                aria-label="Search and select your technology stack"
                                             />
                                             <datalist id="stack-options">
                                                 <option value="React/NodeJS/PostgreSQL" />
@@ -106,37 +103,54 @@ const Gatekeeper = ({ onComplete }) => {
                                         </div>
 
                                         <div className="profiler-group">
-                                            <label>Self-Audit: System Design ({step.value.design}/5)</label>
+                                            <label htmlFor={`design-${step.id}`}>Self-Audit: System Design ({step.value.design}/5)</label>
                                             <input
+                                                id={`design-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.design}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, design: e.target.value })}
+                                                aria-label={`System Design skill level: ${step.value.design} out of 5`}
+                                                aria-valuemin="1"
+                                                aria-valuemax="5"
+                                                aria-valuenow={step.value.design}
                                             />
                                         </div>
 
                                         <div className="profiler-group">
-                                            <label>Self-Audit: Algorithmic Efficiency ({step.value.efficiency}/5)</label>
+                                            <label htmlFor={`efficiency-${step.id}`}>Self-Audit: Algorithmic Efficiency ({step.value.efficiency}/5)</label>
                                             <input
+                                                id={`efficiency-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.efficiency}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, efficiency: e.target.value })}
+                                                aria-label={`Algorithmic Efficiency skill level: ${step.value.efficiency} out of 5`}
+                                                aria-valuemin="1"
+                                                aria-valuemax="5"
+                                                aria-valuenow={step.value.efficiency}
                                             />
                                         </div>
 
                                         <div className="profiler-group">
-                                            <label>Self-Audit: Debugging/Testing ({step.value.debugging}/5)</label>
+                                            <label htmlFor={`debugging-${step.id}`}>Self-Audit: Debugging/Testing ({step.value.debugging}/5)</label>
                                             <input
+                                                id={`debugging-${step.id}`}
                                                 type="range" min="1" max="5"
                                                 value={step.value.debugging}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, debugging: e.target.value })}
+                                                aria-label={`Debugging and Testing skill level: ${step.value.debugging} out of 5`}
+                                                aria-valuemin="1"
+                                                aria-valuemax="5"
+                                                aria-valuenow={step.value.debugging}
                                             />
                                         </div>
 
                                         <div className="profiler-group">
-                                            <label>Primary Objective</label>
+                                            <label htmlFor={`objective-${step.id}`}>Primary Objective</label>
                                             <select
+                                                id={`objective-${step.id}`}
                                                 value={step.value.objective}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, objective: e.target.value })}
+                                                aria-label="Select your primary objective"
                                             >
                                                 <option value="" disabled>Select Objective</option>
                                                 <option value="Fix Portfolio">Fix Portfolio</option>
@@ -172,6 +186,8 @@ const Gatekeeper = ({ onComplete }) => {
                     onClick={onComplete}
                     disabled={!allComplete}
                     style={{ width: '100%', opacity: allComplete ? 1 : 0.5 }}
+                    aria-label={allComplete ? 'Generate Deployment Path' : 'Complete all checklist items to continue'}
+                    aria-disabled={!allComplete}
                 >
                     {allComplete ? 'Generate Deployment Path' : 'Awaiting Clearances...'}
                 </button>

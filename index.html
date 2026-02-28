@@ -63,15 +63,16 @@
 </head>
 
 <body>
-    <nav class="navbar">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
         <div class="container nav-content">
-            <div class="logo">BTD_</div>
+            <div class="logo" aria-label="Built To Deploy">BTD_</div>
             <a href="https://bit.ly/join-built-to-deploy" class="btn btn-outline" target="_blank"
-                rel="noopener noreferrer">Join Waitlist</a>
+                rel="noopener noreferrer" aria-label="Join waitlist (opens in new tab)">Join Waitlist</a>
         </div>
     </nav>
 
-    <main>
+    <main id="main-content">
         <!-- 1. Hero Section -->
         <header class="section hero">
             <div class="container">
@@ -343,11 +344,11 @@
                 <h2 class="section-heading">> Frequently Asked Questions</h2>
                 <div class="accordion">
                     <div class="accordion-item">
-                        <button class="accordion-header">
+                        <button class="accordion-header" aria-expanded="false" aria-controls="faq-1">
                             <span class="accordion-title">Do you accept beginners?</span>
-                            <span class="accordion-icon">+</span>
+                            <span class="accordion-icon" aria-hidden="true">+</span>
                         </button>
-                        <div class="accordion-content">
+                        <div class="accordion-content" id="faq-1" role="region" aria-labelledby="faq-1-header">
                             <div class="accordion-inner">
                                 Candidates with zero prior building experience are automatically rejected. Deferred
                                 candidates must complete specific FreeCodeCamp certifications before reapplying for the
@@ -356,11 +357,11 @@
                         </div>
                     </div>
                     <div class="accordion-item">
-                        <button class="accordion-header">
+                        <button class="accordion-header" aria-expanded="false" aria-controls="faq-2">
                             <span class="accordion-title">What is the refund policy?</span>
-                            <span class="accordion-icon">+</span>
+                            <span class="accordion-icon" aria-hidden="true">+</span>
                         </button>
-                        <div class="accordion-content">
+                        <div class="accordion-content" id="faq-2" role="region" aria-labelledby="faq-2-header">
                             <div class="accordion-inner">
                                 Strict 3-Day Window. If the pace is too intense within the first 72 hours, you get a
                                 full refund. Day 4: Zero refunds.
@@ -383,22 +384,38 @@
         </div>
     </footer>
     <script>
-        document.querySelectorAll('.accordion-header').forEach(button => {
+        document.querySelectorAll('.accordion-header').forEach((button, index) => {
+            const item = button.closest('.accordion-item');
+            const content = item.querySelector('.accordion-content');
+            
+            // Set unique IDs for accessibility
+            button.id = `faq-${index + 1}-header`;
+            
             button.addEventListener('click', () => {
-                const item = button.closest('.accordion-item');
-                const content = item.querySelector('.accordion-content');
                 const isActive = item.classList.contains('active');
 
                 // Close all other items explicitly if you want only one open at a time
                 document.querySelectorAll('.accordion-item').forEach(accItem => {
+                    const accButton = accItem.querySelector('.accordion-header');
+                    const accContent = accItem.querySelector('.accordion-content');
                     accItem.classList.remove('active');
-                    accItem.querySelector('.accordion-content').style.maxHeight = null;
+                    accContent.style.maxHeight = null;
+                    accButton.setAttribute('aria-expanded', 'false');
                 });
 
                 // Toggle the clicked item
                 if (!isActive) {
                     item.classList.add('active');
                     content.style.maxHeight = content.scrollHeight + "px";
+                    button.setAttribute('aria-expanded', 'true');
+                }
+            });
+            
+            // Keyboard navigation support
+            button.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    button.click();
                 }
             });
         });

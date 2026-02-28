@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ReactFlow, Background, Controls } from '@xyflow/react';
+import { useState, useEffect } from 'react';
+import { ReactFlow, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Lock, X, Bell } from 'lucide-react';
 
@@ -47,6 +47,16 @@ const ExecutionDashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && isReviewModalOpen) {
+                setIsReviewModalOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isReviewModalOpen]);
+
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
         const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -64,30 +74,31 @@ const ExecutionDashboard = () => {
                     </div>
 
                     {/* Corporate Comms Widget */}
-                    <div className={`comms-widget ${isCommsExpanded ? 'expanded' : 'collapsed'}`}>
+                    <div className={`comms-widget ${isCommsExpanded ? 'expanded' : 'collapsed'}`} role="region" aria-label="Corporate Communications">
                         {isCommsExpanded ? (
                             <div className="comms-header">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>Corporate Comms</span>
-                                    <span className="badge">LIVE</span>
+                                    <span className="badge" aria-label="Live updates">LIVE</span>
                                 </div>
-                                <button className="btn-icon" onClick={() => setIsCommsExpanded(false)}>
+                                <button className="btn-icon" onClick={() => setIsCommsExpanded(false)} aria-label="Collapse communications panel">
                                     <X size={20} />
                                 </button>
                             </div>
                         ) : (
-                            <div
+                            <button
                                 onClick={() => setIsCommsExpanded(true)}
-                                style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none' }}
+                                aria-label="Expand communications panel - 4 new messages"
                             >
                                 <div className="bell-container">
-                                    <Bell size={24} className="bell-icon" />
-                                    <span className="bell-indicator"></span>
+                                    <Bell size={24} className="bell-icon" aria-hidden="true" />
+                                    <span className="bell-indicator" aria-label="New notifications"></span>
                                 </div>
-                            </div>
+                            </button>
                         )}
-                        <div className="comms-feed">
-                            <div className="comm-item critical">
+                        <div className="comms-feed" role="log" aria-live="polite" aria-atomic="false">
+                            <div className="comm-item critical" role="alert">
                                 PM SYSTEM: You have not pushed code in 72 hours. The team is seeking a replacement. Acknowledge immediately.
                             </div>
                             <div className="comm-item warning">
@@ -116,7 +127,7 @@ const ExecutionDashboard = () => {
                 <div className="dashboard-right">
                     <div className="execution-header">
                         <div className="execution-title">DAY 14 EXECUTION</div>
-                        <div className="execution-timer">{formatTime(timeLeft)} <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)' }}>Remaining</span></div>
+                        <div className="execution-timer" role="timer" aria-live="off" aria-label={`Time remaining: ${formatTime(timeLeft)}`}>{formatTime(timeLeft)} <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)' }}>Remaining</span></div>
                     </div>
 
                     <div className="execution-body">
@@ -140,12 +151,15 @@ const ExecutionDashboard = () => {
                                 placeholder="https://github.com/..."
                                 value={prLink}
                                 onChange={(e) => setPrLink(e.target.value)}
+                                aria-required="true"
+                                aria-describedby="pr-link-desc"
                             />
+                            <span id="pr-link-desc" className="sr-only">Enter the URL of your pull request to submit your work</span>
                             <div style={{ display: 'flex', gap: '16px' }}>
-                                <button className="btn btn-primary" disabled={!prLink.trim()} style={{ flex: 1 }}>
+                                <button className="btn btn-primary" disabled={!prLink.trim()} style={{ flex: 1 }} aria-label="Submit pull request and mark task complete">
                                     Submit & Mark Complete
                                 </button>
-                                <button className="btn btn-outline" onClick={() => setIsReviewModalOpen(true)} style={{ flex: 1 }}>
+                                <button className="btn btn-outline" onClick={() => setIsReviewModalOpen(true)} style={{ flex: 1 }} aria-label="Review pending pull request from team member">
                                     Review Pending PR
                                 </button>
                             </div>
@@ -167,17 +181,17 @@ const ExecutionDashboard = () => {
             {/* Mandatory Peer Review Modal */}
             {
                 isReviewModalOpen && (
-                    <div className="modal-overlay" onClick={() => setIsReviewModalOpen(false)}>
+                    <div className="modal-overlay" onClick={() => setIsReviewModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="review-modal-title">
                         <div className="modal-content" onClick={e => e.stopPropagation()}>
                             <div className="modal-header">
-                                <h2 className="modal-title">Reviewing PR: Context Refactor by [Alex M.]</h2>
-                                <button className="modal-close" onClick={() => setIsReviewModalOpen(false)}>
+                                <h2 id="review-modal-title" className="modal-title">Reviewing PR: Context Refactor by [Alex M.]</h2>
+                                <button className="modal-close" onClick={() => setIsReviewModalOpen(false)} aria-label="Close review modal">
                                     <X size={24} />
                                 </button>
                             </div>
                             <div className="modal-body">
                                 {/* Left Side: Code Diff */}
-                                <div className="modal-left">
+                                <div className="modal-left" role="region" aria-label="Code diff preview">
                                     <div className="diff-placeholder">
                                         <span className="remove">- const [state, setState] = useState(initialState);</span>
                                         <span className="remove">- return &lt;GlobalContext.Provider value=&#123;state&#125;&gt;</span>
@@ -194,9 +208,9 @@ const ExecutionDashboard = () => {
                                 {/* Right Side: Evaluation Form */}
                                 <div className="modal-right">
                                     <div className="eval-form">
-                                        <div className="eval-group">
-                                            <div className="eval-label">Code Execution</div>
-                                            <div className="radio-group">
+                                        <fieldset className="eval-group">
+                                            <legend className="eval-label">Code Execution</legend>
+                                            <div className="radio-group" role="radiogroup" aria-label="Code execution quality">
                                                 {['Fails Tests', 'Passes but Buggy', 'Production Ready'].map(val => (
                                                     <label key={val} className="radio-label">
                                                         <input
@@ -210,11 +224,11 @@ const ExecutionDashboard = () => {
                                                     </label>
                                                 ))}
                                             </div>
-                                        </div>
+                                        </fieldset>
 
-                                        <div className="eval-group">
-                                            <div className="eval-label">Efficiency</div>
-                                            <div className="radio-group">
+                                        <fieldset className="eval-group">
+                                            <legend className="eval-label">Efficiency</legend>
+                                            <div className="radio-group" role="radiogroup" aria-label="Code efficiency level">
                                                 {['Brute Forced', 'Standard', 'Highly Optimized'].map(val => (
                                                     <label key={val} className="radio-label">
                                                         <input
@@ -228,31 +242,36 @@ const ExecutionDashboard = () => {
                                                     </label>
                                                 ))}
                                             </div>
-                                        </div>
+                                        </fieldset>
 
                                         <div className="eval-group">
-                                            <div className="eval-label">Point of Failure / Technical Debt</div>
+                                            <label htmlFor="eval-debt" className="eval-label">Point of Failure / Technical Debt</label>
                                             <textarea
+                                                id="eval-debt"
                                                 rows="4"
                                                 placeholder="Identify one potential point of failure... (Mandatory)"
                                                 value={evalDebt}
                                                 onChange={(e) => setEvalDebt(e.target.value)}
+                                                aria-required="true"
+                                                aria-describedby="eval-debt-desc"
                                             ></textarea>
+                                            <span id="eval-debt-desc" className="sr-only">Describe potential technical debt or failure points in the code</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button className="btn btn-danger" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)}>
+                                <button className="btn btn-danger" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)} aria-label="Request changes to pull request">
                                     Request Changes
                                 </button>
-                                <button className="btn btn-success" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)}>
+                                <button className="btn btn-success" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)} aria-label="Approve and merge pull request">
                                     Approve & Merge
                                 </button>
                             </div>
                         </div>
                     </div>
-                )}
+                )
+            }
         </>
     );
 };
