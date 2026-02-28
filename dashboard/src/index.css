@@ -1053,3 +1053,15 @@ input[type=range]:focus {
   border: none;
   box-shadow: none;
 }
+
+/* Form Validation Styles */
+.input-error {
+  border-color: var(--color-error) !important;
+}
+
+.error-message {
+  display: block;
+  color: var(--color-error);
+  font-size: 0.75rem;
+  margin-top: 4px;
+}

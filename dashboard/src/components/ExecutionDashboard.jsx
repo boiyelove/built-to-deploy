@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ReactFlow, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Lock, X, Bell } from 'lucide-react';
+import { validateUrl, validateTextLength } from '../utils/validation';
 
 const initialNodes = Array.from({ length: 30 }, (_, i) => {
     const day = i + 1;
@@ -28,6 +29,7 @@ const initialEdges = Array.from({ length: 29 }, (_, i) => ({
 const ExecutionDashboard = () => {
     const [timeLeft, setTimeLeft] = useState(14 * 3600 + 23 * 60 + 59); // 14:23:59
     const [prLink, setPrLink] = useState('');
+    const [prLinkError, setPrLinkError] = useState('');
 
     // UI states
     const [isCommsExpanded, setIsCommsExpanded] = useState(false);
@@ -37,8 +39,9 @@ const ExecutionDashboard = () => {
     const [evalExecution, setEvalExecution] = useState('');
     const [evalEfficiency, setEvalEfficiency] = useState('');
     const [evalDebt, setEvalDebt] = useState('');
+    const [evalDebtError, setEvalDebtError] = useState('');
 
-    const isEvalValid = evalDebt.trim().length > 0;
+    const isEvalValid = evalDebt.trim().length > 0 && !evalDebtError;
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -150,13 +153,20 @@ const ExecutionDashboard = () => {
                                 type="text"
                                 placeholder="https://github.com/..."
                                 value={prLink}
-                                onChange={(e) => setPrLink(e.target.value)}
+                                onChange={(e) => {
+                                    setPrLink(e.target.value);
+                                    setPrLinkError('');
+                                }}
+                                onBlur={(e) => setPrLinkError(validateUrl(e.target.value) || '')}
                                 aria-required="true"
                                 aria-describedby="pr-link-desc"
+                                aria-invalid={!!prLinkError}
+                                className={prLinkError ? 'input-error' : ''}
                             />
+                            {prLinkError && <span className="error-message">{prLinkError}</span>}
                             <span id="pr-link-desc" className="sr-only">Enter the URL of your pull request to submit your work</span>
                             <div style={{ display: 'flex', gap: '16px' }}>
-                                <button className="btn btn-primary" disabled={!prLink.trim()} style={{ flex: 1 }} aria-label="Submit pull request and mark task complete">
+                                <button className="btn btn-primary" disabled={!prLink.trim() || !!prLinkError} style={{ flex: 1 }} aria-label="Submit pull request and mark task complete">
                                     Submit & Mark Complete
                                 </button>
                                 <button className="btn btn-outline" onClick={() => setIsReviewModalOpen(true)} style={{ flex: 1 }} aria-label="Review pending pull request from team member">
@@ -251,10 +261,17 @@ const ExecutionDashboard = () => {
                                                 rows="4"
                                                 placeholder="Identify one potential point of failure... (Mandatory)"
                                                 value={evalDebt}
-                                                onChange={(e) => setEvalDebt(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEvalDebt(e.target.value);
+                                                    setEvalDebtError('');
+                                                }}
+                                                onBlur={(e) => setEvalDebtError(validateTextLength(e.target.value, 10, 'Technical debt description') || '')}
                                                 aria-required="true"
                                                 aria-describedby="eval-debt-desc"
+                                                aria-invalid={!!evalDebtError}
+                                                className={evalDebtError ? 'input-error' : ''}
                                             ></textarea>
+                                            {evalDebtError && <span className="error-message">{evalDebtError}</span>}
                                             <span id="eval-debt-desc" className="sr-only">Describe potential technical debt or failure points in the code</span>
                                         </div>
                                     </div>
