@@ -12,6 +12,7 @@ const Gatekeeper = ({ onComplete }) => {
         { id: 3, type: 'upload', label: 'Upload Resume (.pdf only)', status: 'pending' },
         { id: 4, type: 'profiler', label: 'The Skills Profiler', status: 'pending', value: { role: '', stack: '', design: 3, efficiency: 3, debugging: 3, objective: '' } }
     ]);
+    const [stackError, setStackError] = useState('');
 
     const allComplete = steps.every(s => s.status === 'success');
 
@@ -26,6 +27,20 @@ const Gatekeeper = ({ onComplete }) => {
 
     const handleInputChange = (id, value) => {
         setSteps(prev => prev.map(s => s.id === id ? { ...s, value } : s));
+        if (id === 4 && value.stack !== undefined) {
+            if (value.stack.trim() && value.stack.trim().length < 3) {
+                setStackError('Stack must be at least 3 characters');
+            } else {
+                setStackError('');
+            }
+        }
+    };
+
+    const validateProfiler = (value) => {
+        if (!value.role) return 'Role is required';
+        if (!value.stack || value.stack.trim().length < 3) return 'Valid stack is required';
+        if (!value.objective) return 'Objective is required';
+        return '';
     };
 
     const _handleInputSubmit = (id) => {
@@ -94,7 +109,10 @@ const Gatekeeper = ({ onComplete }) => {
                                                 placeholder="Search stack (e.g. React/Node)..."
                                                 value={step.value.stack}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, stack: e.target.value })}
+                                                aria-invalid={!!stackError}
+                                                aria-describedby={stackError ? "stack-error" : undefined}
                                             />
+                                            {stackError && <div id="stack-error" style={{ color: 'var(--color-danger)', fontSize: '0.875rem', marginTop: '4px' }}>{stackError}</div>}
                                             <datalist id="stack-options">
                                                 <option value="React/NodeJS/PostgreSQL" />
                                                 <option value="Vue/Laravel/MySQL" />
@@ -148,12 +166,13 @@ const Gatekeeper = ({ onComplete }) => {
                                         <button
                                             className="btn btn-primary"
                                             onClick={() => {
-                                                if (step.value.role && step.value.stack && step.value.objective) {
+                                                const error = validateProfiler(step.value);
+                                                if (!error) {
                                                     updateStatus(step.id, 'loading');
                                                     mockValidate(() => updateStatus(step.id, 'success'));
                                                 }
                                             }}
-                                            disabled={!(step.value.role && step.value.stack && step.value.objective)}
+                                            disabled={!!validateProfiler(step.value) || !!stackError}
                                             style={{ marginTop: '16px', width: '100%' }}
                                         >
                                             Save Profile Identity

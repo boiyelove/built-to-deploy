@@ -28,6 +28,7 @@ const initialEdges = Array.from({ length: 29 }, (_, i) => ({
 const ExecutionDashboard = () => {
     const [timeLeft, setTimeLeft] = useState(14 * 3600 + 23 * 60 + 59); // 14:23:59
     const [prLink, setPrLink] = useState('');
+    const [prLinkError, setPrLinkError] = useState('');
 
     // UI states
     const [isCommsExpanded, setIsCommsExpanded] = useState(false);
@@ -37,6 +38,7 @@ const ExecutionDashboard = () => {
     const [evalExecution, setEvalExecution] = useState('');
     const [evalEfficiency, setEvalEfficiency] = useState('');
     const [evalDebt, setEvalDebt] = useState('');
+    const [evalDebtError, setEvalDebtError] = useState('');
 
     const isEvalValid = evalDebt.trim().length > 0;
 
@@ -52,6 +54,42 @@ const ExecutionDashboard = () => {
         const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
         return `${h}:${m}:${s}`;
+    };
+
+    const validatePrLink = (url) => {
+        if (!url.trim()) return 'PR link is required';
+        try {
+            const parsed = new URL(url);
+            if (!['github.com', 'gitlab.com'].some(d => parsed.hostname.includes(d))) {
+                return 'Must be a GitHub or GitLab URL';
+            }
+        } catch {
+            return 'Invalid URL format';
+        }
+        return '';
+    };
+
+    const handlePrLinkChange = (value) => {
+        setPrLink(value);
+        if (value.trim()) setPrLinkError(validatePrLink(value));
+    };
+
+    const handleSubmitPr = () => {
+        const error = validatePrLink(prLink);
+        if (error) {
+            setPrLinkError(error);
+            return;
+        }
+        // Submit logic here
+    };
+
+    const handleEvalDebtChange = (value) => {
+        setEvalDebt(value);
+        if (value.trim() && value.trim().length < 10) {
+            setEvalDebtError('Must be at least 10 characters');
+        } else {
+            setEvalDebtError('');
+        }
     };
 
     return (
@@ -139,10 +177,13 @@ const ExecutionDashboard = () => {
                                 type="text"
                                 placeholder="https://github.com/..."
                                 value={prLink}
-                                onChange={(e) => setPrLink(e.target.value)}
+                                onChange={(e) => handlePrLinkChange(e.target.value)}
+                                aria-invalid={!!prLinkError}
+                                aria-describedby={prLinkError ? "pr-link-error" : undefined}
                             />
+                            {prLinkError && <div id="pr-link-error" style={{ color: 'var(--color-danger)', fontSize: '0.875rem', marginTop: '4px' }}>{prLinkError}</div>}
                             <div style={{ display: 'flex', gap: '16px' }}>
-                                <button className="btn btn-primary" disabled={!prLink.trim()} style={{ flex: 1 }}>
+                                <button className="btn btn-primary" onClick={handleSubmitPr} disabled={!prLink.trim() || !!prLinkError} style={{ flex: 1 }}>
                                     Submit & Mark Complete
                                 </button>
                                 <button className="btn btn-outline" onClick={() => setIsReviewModalOpen(true)} style={{ flex: 1 }}>
@@ -236,17 +277,20 @@ const ExecutionDashboard = () => {
                                                 rows="4"
                                                 placeholder="Identify one potential point of failure... (Mandatory)"
                                                 value={evalDebt}
-                                                onChange={(e) => setEvalDebt(e.target.value)}
+                                                onChange={(e) => handleEvalDebtChange(e.target.value)}
+                                                aria-invalid={!!evalDebtError}
+                                                aria-describedby={evalDebtError ? "eval-debt-error" : undefined}
                                             ></textarea>
+                                            {evalDebtError && <div id="eval-debt-error" style={{ color: 'var(--color-danger)', fontSize: '0.875rem', marginTop: '4px' }}>{evalDebtError}</div>}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button className="btn btn-danger" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)}>
+                                <button className="btn btn-danger" disabled={!isEvalValid || !!evalDebtError} onClick={() => setIsReviewModalOpen(false)}>
                                     Request Changes
                                 </button>
-                                <button className="btn btn-success" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)}>
+                                <button className="btn btn-success" disabled={!isEvalValid || !!evalDebtError} onClick={() => setIsReviewModalOpen(false)}>
                                     Approve & Merge
                                 </button>
                             </div>
