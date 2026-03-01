@@ -40,6 +40,14 @@ Internal API endpoint for capturing waitlist signups.
 }
 ```
 
+### Error (409)
+
+```json
+{
+  "error": "Email already registered"
+}
+```
+
 ### Error (500)
 
 ```json
