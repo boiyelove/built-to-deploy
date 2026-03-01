@@ -28,6 +28,7 @@ const initialEdges = Array.from({ length: 29 }, (_, i) => ({
 const ExecutionDashboard = () => {
     const [timeLeft, setTimeLeft] = useState(14 * 3600 + 23 * 60 + 59); // 14:23:59
     const [prLink, setPrLink] = useState('');
+    const [prLinkError, setPrLinkError] = useState('');
 
     // UI states
     const [isCommsExpanded, setIsCommsExpanded] = useState(false);
@@ -37,8 +38,7 @@ const ExecutionDashboard = () => {
     const [evalExecution, setEvalExecution] = useState('');
     const [evalEfficiency, setEvalEfficiency] = useState('');
     const [evalDebt, setEvalDebt] = useState('');
-
-    const isEvalValid = evalDebt.trim().length > 0;
+    const [evalDebtError, setEvalDebtError] = useState('');
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -150,13 +150,31 @@ const ExecutionDashboard = () => {
                                 type="text"
                                 placeholder="https://github.com/..."
                                 value={prLink}
-                                onChange={(e) => setPrLink(e.target.value)}
+                                onChange={(e) => {
+                                    setPrLink(e.target.value);
+                                    setPrLinkError('');
+                                }}
                                 aria-required="true"
                                 aria-describedby="pr-link-desc"
                             />
                             <span id="pr-link-desc" className="sr-only">Enter the URL of your pull request to submit your work</span>
+                            {prLinkError && <span className="error-text">{prLinkError}</span>}
                             <div style={{ display: 'flex', gap: '16px' }}>
-                                <button className="btn btn-primary" disabled={!prLink.trim()} style={{ flex: 1 }} aria-label="Submit pull request and mark task complete">
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={() => {
+                                        if (!prLink.trim()) {
+                                            setPrLinkError('PR link is required');
+                                            return;
+                                        }
+                                        if (!prLink.match(/^https?:\/\/(github\.com|gitlab\.com)/)) {
+                                            setPrLinkError('Must be a valid GitHub or GitLab URL');
+                                            return;
+                                        }
+                                    }}
+                                    style={{ flex: 1 }} 
+                                    aria-label="Submit pull request and mark task complete"
+                                >
                                     Submit & Mark Complete
                                 </button>
                                 <button className="btn btn-outline" onClick={() => setIsReviewModalOpen(true)} style={{ flex: 1 }} aria-label="Review pending pull request from team member">
@@ -251,20 +269,44 @@ const ExecutionDashboard = () => {
                                                 rows="4"
                                                 placeholder="Identify one potential point of failure... (Mandatory)"
                                                 value={evalDebt}
-                                                onChange={(e) => setEvalDebt(e.target.value)}
+                                                onChange={(e) => {
+                                                    setEvalDebt(e.target.value);
+                                                    setEvalDebtError('');
+                                                }}
                                                 aria-required="true"
                                                 aria-describedby="eval-debt-desc"
                                             ></textarea>
                                             <span id="eval-debt-desc" className="sr-only">Describe potential technical debt or failure points in the code</span>
+                                            {evalDebtError && <span className="error-text">{evalDebtError}</span>}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button className="btn btn-danger" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)} aria-label="Request changes to pull request">
+                                <button 
+                                    className="btn btn-danger" 
+                                    onClick={() => {
+                                        if (!evalDebt.trim()) {
+                                            setEvalDebtError('Technical debt analysis is required');
+                                            return;
+                                        }
+                                        setIsReviewModalOpen(false);
+                                    }} 
+                                    aria-label="Request changes to pull request"
+                                >
                                     Request Changes
                                 </button>
-                                <button className="btn btn-success" disabled={!isEvalValid} onClick={() => setIsReviewModalOpen(false)} aria-label="Approve and merge pull request">
+                                <button 
+                                    className="btn btn-success" 
+                                    onClick={() => {
+                                        if (!evalDebt.trim()) {
+                                            setEvalDebtError('Technical debt analysis is required');
+                                            return;
+                                        }
+                                        setIsReviewModalOpen(false);
+                                    }} 
+                                    aria-label="Approve and merge pull request"
+                                >
                                     Approve & Merge
                                 </button>
                             </div>

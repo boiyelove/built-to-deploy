@@ -10,7 +10,7 @@ const Gatekeeper = ({ onComplete }) => {
         { id: 1, type: 'oauth', label: 'Authenticate with Google', status: 'pending' },
         { id: 2, type: 'oauth', label: 'Connect LinkedIn Profile', status: 'pending' },
         { id: 3, type: 'upload', label: 'Upload Resume (.pdf only)', status: 'pending' },
-        { id: 4, type: 'profiler', label: 'The Skills Profiler', status: 'pending', value: { role: '', stack: '', design: 3, efficiency: 3, debugging: 3, objective: '' } }
+        { id: 4, type: 'profiler', label: 'The Skills Profiler', status: 'pending', value: { role: '', stack: '', design: 3, efficiency: 3, debugging: 3, objective: '' }, errors: {} }
     ]);
 
     const allComplete = steps.every(s => s.status === 'success');
@@ -25,7 +25,7 @@ const Gatekeeper = ({ onComplete }) => {
     };
 
     const handleInputChange = (id, value) => {
-        setSteps(prev => prev.map(s => s.id === id ? { ...s, value } : s));
+        setSteps(prev => prev.map(s => s.id === id ? { ...s, value, errors: {} } : s));
     };
 
     return (
@@ -79,6 +79,7 @@ const Gatekeeper = ({ onComplete }) => {
                                                     </button>
                                                 ))}
                                             </div>
+                                            {step.errors?.role && <span className="error-text">{step.errors.role}</span>}
                                         </div>
 
                                         <div className="profiler-group">
@@ -100,6 +101,7 @@ const Gatekeeper = ({ onComplete }) => {
                                                 <option value="Python/Django/AWS" />
                                                 <option value="C#/ASPNET/Azure" />
                                             </datalist>
+                                            {step.errors?.stack && <span className="error-text">{step.errors.stack}</span>}
                                         </div>
 
                                         <div className="profiler-group">
@@ -157,17 +159,25 @@ const Gatekeeper = ({ onComplete }) => {
                                                 <option value="Learn Architecture">Learn Architecture</option>
                                                 <option value="Scale to Production">Scale to Production</option>
                                             </select>
+                                            {step.errors?.objective && <span className="error-text">{step.errors.objective}</span>}
                                         </div>
 
                                         <button
                                             className="btn btn-primary"
                                             onClick={() => {
-                                                if (step.value.role && step.value.stack && step.value.objective) {
-                                                    updateStatus(step.id, 'loading');
-                                                    mockValidate(() => updateStatus(step.id, 'success'));
+                                                const errors = {};
+                                                if (!step.value.role) errors.role = 'Role is required';
+                                                if (!step.value.stack?.trim()) errors.stack = 'Stack is required';
+                                                if (!step.value.objective) errors.objective = 'Objective is required';
+
+                                                if (Object.keys(errors).length > 0) {
+                                                    setSteps(prev => prev.map(s => s.id === step.id ? { ...s, errors } : s));
+                                                    return;
                                                 }
+
+                                                updateStatus(step.id, 'loading');
+                                                mockValidate(() => updateStatus(step.id, 'success'));
                                             }}
-                                            disabled={!(step.value.role && step.value.stack && step.value.objective)}
                                             style={{ marginTop: '16px', width: '100%' }}
                                         >
                                             Save Profile Identity

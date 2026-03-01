@@ -121,6 +121,13 @@ select:focus {
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
+.error-text {
+  display: block;
+  color: var(--color-error);
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
+
 /* App Container */
 .app-container {
   min-height: 100vh;
