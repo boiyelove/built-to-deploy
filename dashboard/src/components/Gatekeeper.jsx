@@ -91,6 +91,8 @@ const Gatekeeper = ({ onComplete }) => {
                                                 value={step.value.stack}
                                                 onChange={(e) => handleInputChange(step.id, { ...step.value, stack: e.target.value })}
                                                 aria-label="Search and select your technology stack"
+                                                required
+                                                minLength={3}
                                             />
                                             <datalist id="stack-options">
                                                 <option value="React/NodeJS/PostgreSQL" />
