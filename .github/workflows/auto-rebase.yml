@@ -1,5 +1,7 @@
 # ---
-# Description: Serial merge queue that merges all passing PRs, rebases remaining, closes conflicts
+# Description: Serial merge queue with choke-file conflict resolution.
+#   Merges passing PRs, rebases remaining, resolves infra-only conflicts,
+#   closes + re-queues PRs with feature-file conflicts.
 # Author: boiyelove
 # Pass Criteria: N/A (operational workflow)
 # ---
@@ -12,6 +14,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 */2 * * *'
+
+concurrency:
+  group: auto-rebase
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -27,28 +33,45 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge all passing PRs sequentially
+      - name: Merge and rebase PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Choke files: infra/config files that workers independently rewrite.
+          # Conflicts in these are safe to resolve by taking dev's version.
+          CHOKE_FILES="package.json package-lock.json eslint.config.js eslint.config.ts vitest.config.ts vitest.config.js tsconfig.json .prettierrc .prettierrc.json"
+
           MERGED=0
           REBASED=0
+          RESOLVED=0
           CLOSED=0
 
-          # Loop: merge one, rebase rest, repeat until no more mergeable
           while true; do
-            # Get open PRs sorted by number (oldest first)
-            prs=$(gh pr list --base dev --state open --json number,headRefName --jq 'sort_by(.number) | .[] | "\(.number) \(.headRefName)"')
+            prs=$(gh pr list --base dev --state open --json number,headRefName,labels \
+              --jq 'sort_by(.number) | .[] | "\(.number) \(.headRefName) \(.labels | map(.name) | join(","))"')
 
             [ -z "$prs" ] && echo "No open PRs" && break
 
             MERGED_THIS_ROUND=false
 
-            while read -r pr_number branch; do
+            while read -r pr_number branch labels; do
+              echo ""
               echo "--- PR #${pr_number} (${branch}) ---"
+
+              # Skip PRs where a worker is still building
+              if echo "$labels" | grep -qE "in-progress"; then
+                echo "Skipping: worker in-progress"
+                continue
+              fi
+
+              # Skip PRs already rebased this run (prevent re-resolution loops)
+              if echo "$labels" | grep -q "rebased"; then
+                echo "Skipping: already rebased this run"
+                continue
+              fi
 
               ci_status=$(gh pr checks "$pr_number" --json bucket --jq '[.[] | select(.bucket != "pass")] | length' 2>/dev/null || echo "unknown")
 
@@ -59,11 +82,11 @@ jobs:
                   MERGED=$((MERGED + 1))
                   MERGED_THIS_ROUND=true
                   sleep 2
-                  break  # Break inner loop, refresh PR list, continue outer loop
+                  break
                 fi
               fi
 
-              # Not mergeable yet -- try rebase
+              # Rebase onto latest dev
               git fetch origin "$branch" 2>/dev/null
               git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" 2>/dev/null
               if ! git rev-parse --verify "$branch" >/dev/null 2>&1; then
@@ -75,29 +98,115 @@ jobs:
               git fetch origin dev
               if git rebase origin/dev 2>/dev/null; then
                 git push --force-with-lease origin "$branch" 2>/dev/null
-                echo "Rebased successfully"
+                echo "Rebased cleanly"
                 REBASED=$((REBASED + 1))
-              else
-                git rebase --abort
-                gh pr close "$pr_number" --comment "Auto-closed: rebase conflict with dev. Issue will be re-queued for a fresh attempt."
-                echo "Conflict -- PR closed"
-                CLOSED=$((CLOSED + 1))
+                gh pr edit "$pr_number" --add-label "rebased" 2>/dev/null || true
+                git checkout dev 2>/dev/null
+                continue
               fi
 
+              # Rebase failed -- check if ALL conflicts are choke files
+              CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null)
+              ALL_CHOKE=true
+              NON_CHOKE=""
+              for cf in $CONFLICT_FILES; do
+                BASENAME=$(basename "$cf")
+                IS_CHOKE=false
+                for choke in $CHOKE_FILES; do
+                  [ "$BASENAME" = "$choke" ] && IS_CHOKE=true && break
+                done
+                if [ "$IS_CHOKE" = false ]; then
+                  ALL_CHOKE=false
+                  NON_CHOKE="${NON_CHOKE:+$NON_CHOKE, }$cf"
+                fi
+              done
+
+              if [ "$ALL_CHOKE" = true ] && [ -n "$CONFLICT_FILES" ]; then
+                echo "All conflicts are choke files -- resolving with dev's version"
+
+                # Resolve choke conflicts: take dev's version, continue rebase
+                # Loop handles multi-commit rebases where choke files conflict repeatedly
+                RESOLVE_OK=true
+                for attempt in $(seq 1 10); do
+                  for cf in $(git diff --name-only --diff-filter=U 2>/dev/null); do
+                    git checkout origin/dev -- "$cf" 2>/dev/null || true
+                    git add "$cf"
+                  done
+
+                  # Check if rebase is done
+                  if git rebase --continue 2>/dev/null; then
+                    break
+                  fi
+
+                  # Still rebasing -- check if new conflicts are still choke-only
+                  NEW_CONFLICTS=$(git diff --name-only --diff-filter=U 2>/dev/null)
+                  if [ -z "$NEW_CONFLICTS" ]; then
+                    break
+                  fi
+                  for ncf in $NEW_CONFLICTS; do
+                    NCF_BASE=$(basename "$ncf")
+                    NCF_CHOKE=false
+                    for choke in $CHOKE_FILES; do
+                      [ "$NCF_BASE" = "$choke" ] && NCF_CHOKE=true && break
+                    done
+                    if [ "$NCF_CHOKE" = false ]; then
+                      echo "Non-choke conflict appeared during resolution: $ncf"
+                      RESOLVE_OK=false
+                      break 2
+                    fi
+                  done
+                done
+
+                if [ "$RESOLVE_OK" = true ]; then
+                  git push --force-with-lease origin "$branch" 2>/dev/null
+                  echo "Resolved choke conflicts and pushed"
+                  RESOLVED=$((RESOLVED + 1))
+                  gh pr edit "$pr_number" --add-label "rebased" 2>/dev/null || true
+                  gh pr comment "$pr_number" --body "Auto-rebase resolved config file conflicts (took dev's version). CI will re-run -- if deps are missing, the fix loop will handle it." 2>/dev/null || true
+                  git checkout dev 2>/dev/null
+                  continue
+                fi
+
+                # Resolution failed mid-way -- abort and fall through to close
+                git rebase --abort 2>/dev/null
+              else
+                git rebase --abort 2>/dev/null
+              fi
+
+              # Feature-file conflict -- close PR, label for re-queue
+              echo "Feature-file conflict: $NON_CHOKE"
+              gh pr close "$pr_number" --comment "Auto-closed: conflict in feature files ($NON_CHOKE). Issue will be re-queued for fresh implementation against current dev." 2>/dev/null
+
+              # Extract issue number from branch and label for re-queue
+              ISSUE_NUM=$(echo "$branch" | grep -oE '[0-9]+$')
+              if [ -n "$ISSUE_NUM" ]; then
+                gh issue edit "$ISSUE_NUM" --remove-label "in-progress" --add-label "needs-revision" 2>/dev/null || true
+              fi
+
+              CLOSED=$((CLOSED + 1))
               git checkout dev 2>/dev/null
             done <<< "$prs"
 
-            # If nothing merged this round, stop
             [ "$MERGED_THIS_ROUND" = "false" ] && break
 
-            # Refresh dev after merge
             git fetch origin dev
             git checkout dev
             git reset --hard origin/dev
           done
 
           echo ""
-          echo "=== Summary: merged=$MERGED rebased=$REBASED closed=$CLOSED ==="
+          echo "=== Summary: merged=$MERGED rebased=$REBASED resolved=$RESOLVED closed=$CLOSED ==="
+
+      - name: Clean up rebased labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Remove rebased label from all open PRs (reset for next run)
+          gh pr list --base dev --state open --json number,labels \
+            --jq '.[] | select(.labels | map(.name) | any(. == "rebased")) | .number' | \
+          while read -r pr_number; do
+            gh pr edit "$pr_number" --remove-label "rebased" 2>/dev/null || true
+          done
 
       - name: Delete orphaned kiro branches
         env:
