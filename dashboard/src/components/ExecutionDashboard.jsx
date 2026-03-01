@@ -147,12 +147,14 @@ const ExecutionDashboard = () => {
                             <label htmlFor="pr-link">Link to Pull Request (GitHub / GitLab)</label>
                             <input
                                 id="pr-link"
-                                type="text"
+                                type="url"
                                 placeholder="https://github.com/..."
                                 value={prLink}
                                 onChange={(e) => setPrLink(e.target.value)}
                                 aria-required="true"
                                 aria-describedby="pr-link-desc"
+                                required
+                                pattern="https?://(github\.com|gitlab\.com)/.*"
                             />
                             <span id="pr-link-desc" className="sr-only">Enter the URL of your pull request to submit your work</span>
                             <div style={{ display: 'flex', gap: '16px' }}>
@@ -254,6 +256,8 @@ const ExecutionDashboard = () => {
                                                 onChange={(e) => setEvalDebt(e.target.value)}
                                                 aria-required="true"
                                                 aria-describedby="eval-debt-desc"
+                                                required
+                                                minLength={10}
                                             ></textarea>
                                             <span id="eval-debt-desc" className="sr-only">Describe potential technical debt or failure points in the code</span>
                                         </div>
