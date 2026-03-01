@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
+interface NavLink {
+  path: string;
+  label: string;
+}
+
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  const links = [
+  const links: NavLink[] = [
     { path: '/', label: 'Dashboard' },
     { path: '/admin/triage', label: 'Admin Triage' }
   ];

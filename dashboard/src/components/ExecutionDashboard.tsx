@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ReactFlow, Background } from '@xyflow/react';
+import { ReactFlow, Background, Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Lock, X, Bell } from 'lucide-react';
 
-const initialNodes = Array.from({ length: 30 }, (_, i) => {
+const initialNodes: Node[] = Array.from({ length: 30 }, (_, i) => {
     const day = i + 1;
     const status = day < 14 ? 'past' : day === 14 ? 'current' : 'future';
     const label = `Day ${day}: ${day === 1 ? 'Setup' : day === 14 ? 'Refactor Core' : 'Execute'}`;
@@ -17,22 +17,20 @@ const initialNodes = Array.from({ length: 30 }, (_, i) => {
     };
 });
 
-const initialEdges = Array.from({ length: 29 }, (_, i) => ({
+const initialEdges: Edge[] = Array.from({ length: 29 }, (_, i) => ({
     id: `e-${i + 1}-${i + 2}`,
     source: `day-${i + 1}`,
     target: `day-${i + 2}`,
-    animated: i === 13, // Day 14 connection animated
+    animated: i === 13,
     style: { stroke: 'var(--color-border)', strokeWidth: 2 }
 }));
 
 const ExecutionDashboard = () => {
-    const [timeLeft, setTimeLeft] = useState(14 * 3600 + 23 * 60 + 59); // 14:23:59
+    const [timeLeft, setTimeLeft] = useState(14 * 3600 + 23 * 60 + 59);
     const [prLink, setPrLink] = useState('');
 
-    // UI states
     const [isCommsExpanded, setIsCommsExpanded] = useState(false);
 
-    // Modal states
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [evalExecution, setEvalExecution] = useState('');
     const [evalEfficiency, setEvalEfficiency] = useState('');
@@ -48,7 +46,7 @@ const ExecutionDashboard = () => {
     }, []);
 
     useEffect(() => {
-        const handleEscape = (e) => {
+        const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isReviewModalOpen) {
                 setIsReviewModalOpen(false);
             }
@@ -57,7 +55,7 @@ const ExecutionDashboard = () => {
         return () => document.removeEventListener('keydown', handleEscape);
     }, [isReviewModalOpen]);
 
-    const formatTime = (seconds) => {
+    const formatTime = (seconds: number): string => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
         const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
@@ -67,13 +65,11 @@ const ExecutionDashboard = () => {
     return (
         <>
             <div className="dashboard-layout">
-                {/* Left Column - Map */}
                 <div className="dashboard-left">
                     <div className="dashboard-watermark">
                         BUILT TO DEPLOY_ // DEPLOYMENT PATH
                     </div>
 
-                    {/* Corporate Comms Widget */}
                     <div className={`comms-widget ${isCommsExpanded ? 'expanded' : 'collapsed'}`} role="region" aria-label="Corporate Communications">
                         {isCommsExpanded ? (
                             <div className="comms-header">
@@ -97,7 +93,7 @@ const ExecutionDashboard = () => {
                                 </div>
                             </button>
                         )}
-                        <div className="comms-feed" role="log" aria-live="polite" aria-atomic="false">
+                        <div className="comms-feed" role="log" aria-live="polite" aria-atomic={false}>
                             <div className="comm-item critical" role="alert">
                                 PM SYSTEM: You have not pushed code in 72 hours. The team is seeking a replacement. Acknowledge immediately.
                             </div>
@@ -123,7 +119,6 @@ const ExecutionDashboard = () => {
                     </ReactFlow>
                 </div>
 
-                {/* Right Column - Execution Block */}
                 <div className="dashboard-right">
                     <div className="execution-header">
                         <div className="execution-title">DAY 14 EXECUTION</div>
@@ -178,7 +173,6 @@ const ExecutionDashboard = () => {
                 </div>
             </div>
 
-            {/* Mandatory Peer Review Modal */}
             {
                 isReviewModalOpen && (
                     <div className="modal-overlay" onClick={() => setIsReviewModalOpen(false)} role="dialog" aria-modal="true" aria-labelledby="review-modal-title">
@@ -190,7 +184,6 @@ const ExecutionDashboard = () => {
                                 </button>
                             </div>
                             <div className="modal-body">
-                                {/* Left Side: Code Diff */}
                                 <div className="modal-left" role="region" aria-label="Code diff preview">
                                     <div className="diff-placeholder">
                                         <span className="remove">- const [state, setState] = useState(initialState);</span>
@@ -205,7 +198,6 @@ const ExecutionDashboard = () => {
                                         <span className="add">+ &#125;</span>
                                     </div>
                                 </div>
-                                {/* Right Side: Evaluation Form */}
                                 <div className="modal-right">
                                     <div className="eval-form">
                                         <fieldset className="eval-group">
@@ -248,7 +240,7 @@ const ExecutionDashboard = () => {
                                             <label htmlFor="eval-debt" className="eval-label">Point of Failure / Technical Debt</label>
                                             <textarea
                                                 id="eval-debt"
-                                                rows="4"
+                                                rows={4}
                                                 placeholder="Identify one potential point of failure... (Mandatory)"
                                                 value={evalDebt}
                                                 onChange={(e) => setEvalDebt(e.target.value)}

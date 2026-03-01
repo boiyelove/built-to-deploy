@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, Link as LinkIcon, X } from 'lucide-react';
 
-const mockTasks = [
+interface Task {
+    id: string;
+    title: string;
+    candidate: string;
+    role: string;
+    status: 'Blocked' | 'In Progress' | 'Peer Review' | 'Production';
+    blockedBy: string | null;
+}
+
+const mockTasks: Task[] = [
     { id: 't1', title: 'Migrate Auth to JWT', candidate: 'Alex M.', role: 'Backend', status: 'Blocked', blockedBy: 'DB Schema Update' },
     { id: 't2', title: 'Refactor Context API', candidate: 'Sarah K.', role: 'Frontend', status: 'Peer Review', blockedBy: null },
     { id: 't3', title: 'Setup CI/CD Pipeline', candidate: 'David J.', role: 'DevOps', status: 'In Progress', blockedBy: null },
@@ -11,13 +20,13 @@ const mockTasks = [
 ];
 
 const AdminTriageDashboard = () => {
-    const [tasks, setTasks] = useState(mockTasks);
-    const [selectedBlockedTask, setSelectedBlockedTask] = useState(null);
+    const [tasks, setTasks] = useState<Task[]>(mockTasks);
+    const [selectedBlockedTask, setSelectedBlockedTask] = useState<Task | null>(null);
 
-    const columns = ['Blocked', 'In Progress', 'Peer Review', 'Production'];
+    const columns: Array<'Blocked' | 'In Progress' | 'Peer Review' | 'Production'> = ['Blocked', 'In Progress', 'Peer Review', 'Production'];
 
     useEffect(() => {
-        const handleEscape = (e) => {
+        const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && selectedBlockedTask) {
                 setSelectedBlockedTask(null);
             }
@@ -26,7 +35,7 @@ const AdminTriageDashboard = () => {
         return () => document.removeEventListener('keydown', handleEscape);
     }, [selectedBlockedTask]);
 
-    const handleReassign = (taskId) => {
+    const handleReassign = (taskId: string) => {
         setTasks(prev => prev.map(t => {
             if (t.id === taskId) {
                 return { ...t, candidate: 'Elena R. (Reassigned)' };
