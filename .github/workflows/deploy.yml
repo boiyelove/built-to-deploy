@@ -1,3 +1,9 @@
+# ---
+# Description: Deploys static site to Cloudflare Pages on push to main
+# Author: boiyelove
+# Pass Criteria: Successful deployment to Cloudflare Pages
+# ---
+
 name: Deploy to Cloudflare Pages
 
 on:
