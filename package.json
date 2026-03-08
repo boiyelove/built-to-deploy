@@ -4,14 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npm run minify-css",
-    "minify-css": "node scripts/minify-css.js",
+    "build": "cleancss -o style.min.css style.css",
     "deploy": "npm run build && CLOUDFLARE_ACCOUNT_ID=8300cd8ea9d230a30ea863ffe197ade6 wrangler pages deploy . --project-name=built-to-deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "clean-css-cli": "^5.6.3",
     "csso": "^5.0.5",
     "wrangler": "^4.68.0"
   }
